@@ -23,28 +23,65 @@ const CartContext = createContext<CartContextData>({} as CartContextData);
 
 export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const [cart, setCart] = useState<Product[]>(() => {
-    // const storagedCart = Buscar dados do localStorage
+    const storagedCart = localStorage.getItem('@RocketShoes:cart');
 
-    // if (storagedCart) {
-    //   return JSON.parse(storagedCart);
-    // }
+    if (storagedCart) {
+      return JSON.parse(storagedCart);
+    }
 
     return [];
   });
 
   const addProduct = async (productId: number) => {
     try {
-      // TODO
+      const cartNow = [...cart];
+      const productExists = cartNow.find((product) => product.id === productId);
+      const stock = await api.get(`/stock/${productId}`);
+      const amoutInStock = stock.data.amount;
+      const currAmount = productExists ? productExists.amount : 0;
+      const amount = currAmount + 1;
+
+      if (amount > amoutInStock) {
+        toast.error('Quantidade solicitada fora de estoque');
+        return;
+      }
+
+      if (productExists) {
+        productExists.amount = amount;
+      } else {
+        const product = await api.get(`/stock/${productId}`);
+
+        const newProduct = {
+          ...product.data,
+          amount: 1,
+        };
+
+        cartNow.push(newProduct);
+      }
+
+      setCart(cartNow);
+      localStorage.setItem('@RocketShoes:cart', JSON.stringify(cartNow));
     } catch {
-      // TODO
+      toast.error('Erro na adição do produto');
     }
   };
 
   const removeProduct = (productId: number) => {
     try {
-      // TODO
+      const cartNow = [...cart];
+      const productIndex = cartNow.findIndex(
+        (product) => product.id === productId
+      );
+
+      if (productIndex >= 0) {
+        cartNow.splice(productIndex, 1);
+        setCart(cartNow);
+        localStorage.setItem('@RocketShoes:cart', JSON.stringify(cartNow));
+      } else {
+        throw Error();
+      }
     } catch {
-      // TODO
+      toast.error('Erro na remoção do produto');
     }
   };
 
@@ -53,9 +90,9 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     amount,
   }: UpdateProductAmount) => {
     try {
-      // TODO
+      // TODO;
     } catch {
-      // TODO
+      // TODO;
     }
   };
 
